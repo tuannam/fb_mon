@@ -1,0 +1,23 @@
+{
+  "name": "fb-marketplace-monitor",
+  "version": "1.0.0",
+  "description": "Facebook Marketplace Monitor via Telegram Notification",
+  "main": "src/monitor.js",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "nodemon --exec tsx src/server.ts",
+    "build": "tsc",
+    "start:dist": "node dist/server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemon": "^3.1.0",
+    "playwright": "^1.42.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

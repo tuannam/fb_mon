@@ -1,0 +1,19 @@
+services:
+  fb-monitor:
+    build: .
+    container_name: fb-marketplace-monitor
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "6080:6080"  # noVNC web viewer for headless Facebook login
+    volumes:
+      # Runtime data
+      - ./data:/app/data
+      - ./fb_profile:/app/fb_profile
+      # Source mount — enables nodemon hot-reload after git pull (no rebuild needed)
+      - ./src:/app/src
+    environment:
+      - PORT=3000
+      - DATA_DIR=/app/data
+      - USE_XVFB=true
+      - TZ=Australia/Melbourne

@@ -1,0 +1,11 @@
+{
+  "keywords": ["rtx 3090"],
+  "location_id": "melbourne",
+  "max_price": 2000,
+  "check_interval_min": 15,
+  "user_data_dir": "./fb_profile",
+  "headless": true,
+  "telegram_token": "YOUR_TELEGRAM_BOT_TOKEN",
+  "telegram_chat_id": "YOUR_TELEGRAM_CHAT_ID",
+  "telegram_webhook_url": ""
+}

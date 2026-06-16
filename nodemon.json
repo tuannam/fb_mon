@@ -1,0 +1,8 @@
+{
+  "watch": ["src/"],
+  "ext": "ts,js,json,html,css",
+  "ignore": ["data/", "fb_profile/"],
+  "delay": 500,
+  "legacyWatch": true,
+  "pollingInterval": 2000
+}

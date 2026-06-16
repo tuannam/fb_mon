@@ -1,0 +1,11 @@
+# Personal data & secrets
+config.json
+fb_profile/
+monitor.log
+history.json
+
+# Docker runtime data directory
+data/
+
+# Dependencies
+node_modules/
