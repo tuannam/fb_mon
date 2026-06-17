@@ -1,102 +1,165 @@
 # FB Marketplace Monitor
 
-A self-hosted Node.js tool that watches Facebook Marketplace for listings matching your keywords and sends instant **Telegram notifications** when something new appears within your budget.
+A self-hosted Facebook Marketplace watcher that scans for listings matching your keywords and sends Telegram alerts when new matches appear.
 
-Comes with a full **Web Dashboard** to manage all settings, handle Facebook login, start/stop the monitor, and watch live logs — all from your browser, no terminal required after setup.
+The app includes a browser dashboard for configuration, Facebook login, monitor controls, Telegram testing, and live logs. After setup, normal operation can be managed from the dashboard or through Telegram bot commands.
 
-![Dashboard Screenshot](docs/screenshot.png)
+![Dashboard screenshot](docs/screenshot.png)
 
----
+## What It Does
 
-## Features
-
-- **Web Dashboard** — Configure keywords, location, budget, and Telegram credentials through a clean UI. No manual JSON editing needed.
-- **Dashboard Login** — Authenticate Facebook once through a browser window launched from the dashboard. Session is saved and persists across restarts.
-- **Telegram Alerts** — Sends a batch summary first (all new items in one message), then an individual message per item with a direct Marketplace link.
-- **Telegram Bot Commands** — Control the monitor and update keywords directly from Telegram.
-- **Auto-resume** — Monitor state is persisted. If the server restarts (code update, reboot), the monitor resumes automatically and sends you a Telegram notification.
-- **Budget Filter** — Only notifies you when the price is within your set maximum.
-- **Duplicate Prevention** — Tracks seen listings in `history.json` so you never get the same notification twice.
-- **Human-like Behaviour** — Random scroll delays, timing, and ±1–3 minute jitter on the scan interval to avoid detection.
-- **Lightweight** — Only scrapes search result pages, not individual item pages. Runs comfortably on a Raspberry Pi.
-- **Docker support** — Includes `Dockerfile` and `docker-compose.yml` for easy deployment on any remote server.
-- **Auto hot-reload** — Uses nodemon with polling so `git pull` on the server restarts the app automatically.
-- **TypeScript** — Fully typed source with strict mode. Runs directly via `tsx`, no separate compile step needed for development.
-
----
+- Monitors Facebook Marketplace search results with Playwright.
+- Filters listings by keyword, location, and maximum price.
+- Sends Telegram notifications for new matching listings.
+- Tracks seen listing IDs in `history.json` to avoid duplicate alerts.
+- Persists Facebook login state in `fb_profile/`.
+- Provides a web dashboard at `http://localhost:3000`.
+- Supports Docker deployment with noVNC login access on port `6080`.
 
 ## Requirements
 
-- **Node.js** v18+ (for local/Pi setup)
-- **Docker + Docker Compose** (for server deployment)
-- **TypeScript** toolchain is included as a dev dependency — no global install needed
+For local or Raspberry Pi usage:
 
----
+- Node.js 18+
+- npm
+- Playwright Chromium
 
-## Quick Start (Local / Raspberry Pi)
+For Docker usage:
 
-### 1. Install dependencies
+- Docker
+- Docker Compose
+
+## Quick Start
+
+### 1. Install Dependencies
 
 ```bash
 npm install
 npx playwright install chromium
+```
 
-# Linux / Raspberry Pi only — install Chromium system dependencies
+On Linux or Raspberry Pi, install Playwright's system dependencies too:
+
+```bash
 npx playwright install-deps
 ```
 
-### 2. Start the dashboard
+### 2. Start the Dashboard
 
 ```bash
-npm start          # runs tsx src/server.ts directly
-# or for development with auto-reload:
+npm start
+```
+
+For development with automatic restart:
+
+```bash
 npm run dev
 ```
 
-Open **http://localhost:3000** in your browser (or `http://<server-ip>:3000` from another device on the same network).
+Open the dashboard:
 
-### 3. Log in to Facebook
+```text
+http://localhost:3000
+```
 
-1. Go to the **Facebook Login** section at the top of the dashboard.
-2. Click **Open Facebook Login** — a browser window will open on the machine running the server.
-3. Log in to your Facebook account, complete 2FA/CAPTCHA if prompted.
-4. Once you see the Facebook home feed, click **Logged in – Save Session** on the dashboard.
+From another device on the same network, use:
 
-> **Headless server (no display)?** Do the login step on your local Mac/PC first, then copy the `fb_profile/` folder to your server. The saved session will be picked up automatically.
+```text
+http://<server-ip>:3000
+```
 
-### 4. Configure & start monitoring
+### 3. Log In to Facebook
 
-1. Fill in your **keywords**, **city**, **max price (AUD)**, and **Telegram credentials** in the Configuration panel.
-2. Click **Save settings**.
-3. Click **Start monitor** — the monitor runs in the background and sends Telegram alerts on new matches.
+1. Open the **Facebook Login** section in the dashboard.
+2. Click **Open Facebook Login**.
+3. Log in to Facebook and complete any 2FA or CAPTCHA prompts.
+4. When Facebook is fully loaded, click **Logged in - Save Session**.
 
----
+The saved browser profile is stored in `fb_profile/` and reused on future runs.
+
+For a headless server, log in on a local machine first, then copy `fb_profile/` to the server. Docker deployments can also use the noVNC browser at:
+
+```text
+http://<server-ip>:6080/vnc.html
+```
+
+### 4. Configure the Monitor
+
+In the dashboard, set:
+
+- Keywords to search for
+- Marketplace location
+- Maximum price in AUD
+- Scan interval
+- Telegram bot token and chat ID
+
+Click **Save settings**, then **Start monitor**.
+
+## Configuration Files
+
+Runtime files are created automatically on first run.
+
+| File | Local path | Docker path | Purpose |
+| --- | --- | --- | --- |
+| Config | `config.json` | `data/config.json` | Keywords, location, price limit, Telegram credentials |
+| History | `history.json` | `data/history.json` | Seen listing IDs |
+| Logs | `monitor.log` | `data/monitor.log` | Monitor and dashboard logs |
+| Facebook profile | `fb_profile/` | `fb_profile/` | Saved Facebook session |
+
+The app bootstraps `config.json` from `config.example.json` if no config exists.
+
+Example config:
+
+```json
+{
+  "keywords": ["rtx 3090"],
+  "location_id": "melbourne",
+  "max_price": 2000,
+  "check_interval_min": 15,
+  "user_data_dir": "./fb_profile",
+  "headless": true,
+  "telegram_token": "YOUR_TELEGRAM_BOT_TOKEN",
+  "telegram_chat_id": "YOUR_TELEGRAM_CHAT_ID",
+  "telegram_webhook_url": ""
+}
+```
 
 ## Telegram Setup
 
-1. Open Telegram and message **@BotFather** → send `/newbot` → follow prompts to get your **Bot Token**.
-2. Message your new bot (send any text, e.g. `hello`).
-3. On the dashboard, open the **"? How to set up"** guide next to the Telegram section — click **Open getUpdates in browser** to automatically look up your **Chat ID**.
-4. Paste both values into the form and click **Save settings** → **Test Telegram**.
+1. Open Telegram and message `@BotFather`.
+2. Send `/newbot` and follow the prompts.
+3. Copy the bot token.
+4. Send any message to your new bot, such as `hello`.
+5. In the dashboard, use the Telegram setup helper to fetch your chat ID.
+6. Save the bot token and chat ID.
+7. Click **Test Telegram**.
 
-### Telegram Bot Commands
+### Telegram Commands
 
-Once configured, you can control the monitor directly from Telegram:
+Telegram commands require a webhook. See the webhook section below.
 
 | Command | Description |
 | --- | --- |
-| `/status` `/s` | Show monitor state, keyword, next scan time |
-| `/start` | Start the monitor |
-| `/stop` | Stop the monitor |
-| `/keyword <text>` `/k <text>` | Replace the current keyword (e.g. `/k rtx 4090`) |
-| `/maxprice <amount>` `/mp <amount>` | Set max price in AUD — `0` = no limit (e.g. `/mp 1500`) |
-| `/help` `/h` | List all commands |
+| `/status` or `/s` | Show monitor status, keywords, max price, and next scan time |
+| `/start` | Start monitoring |
+| `/stop` | Stop monitoring |
+| `/keyword <text>` or `/k <text>` | Replace the current keyword |
+| `/maxprice <amount>` or `/mp <amount>` | Set max price in AUD. Use `0` for no limit |
+| `/help` or `/h` | Show available commands |
 
-### Webhook Setup (optional — recommended for instant command response)
+Examples:
 
-By default the bot won't receive commands. To enable it, expose the app via HTTPS and register a webhook.
+```text
+/k rtx 4090
+/mp 1500
+/status
+```
 
-**nginx config** (add to your server's `http.conf`):
+## Telegram Webhook
+
+Telegram commands require Telegram to reach this app over HTTPS. Expose only the webhook route publicly.
+
+Example nginx configuration:
 
 ```nginx
 server {
@@ -119,97 +182,125 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 
-    location / { return 404; }
+    location / {
+        return 404;
+    }
 }
 ```
 
-Then in the dashboard set **Telegram Webhook URL** to `https://static.yourdomain.com/telegram-webhook` and click **Save settings** — the webhook is registered with Telegram automatically.
+Then set this value in the dashboard:
 
----
+```text
+https://static.yourdomain.com/telegram-webhook
+```
 
-## Deploy with Docker
+Save the configuration. The app registers the webhook with Telegram automatically.
+
+## Docker Deployment
+
+Build and start the app:
 
 ```bash
-# On your server
-git clone <your-repo-url>
-cd fb-marketplace-monitor
-
 docker compose up -d --build
 ```
 
-Dashboard will be available at `http://your-server-ip:3000`.
+Dashboard:
 
-### Hot-reload after `git pull`
-
-The container uses **nodemon** with filesystem polling and `tsx` as the executor. After pulling new code, the server restarts automatically within ~2 seconds — no rebuild or compile step needed:
-
-```bash
-git pull   # nodemon detects changes and restarts automatically
+```text
+http://<server-ip>:3000
 ```
 
-Only run `docker compose up -d --build` again when adding new npm packages.
+noVNC login browser:
 
-Data that persists across container rebuilds (mounted as volumes):
-| Path | Contents |
-|---|---|
-| `./fb_profile/` | Facebook session cookies |
-| `./data/config.json` | All settings |
-| `./data/history.json` | Seen listing IDs |
+```text
+http://<server-ip>:6080/vnc.html
+```
 
----
+The Docker Compose setup mounts:
 
-## Auto-start with PM2 (optional, non-Docker)
+| Host path | Container path | Purpose |
+| --- | --- | --- |
+| `./data` | `/app/data` | Config, history, status, logs |
+| `./fb_profile` | `/app/fb_profile` | Facebook browser profile |
+| `./src` | `/app/src` | Mounted source code |
+
+The container runs `tsx src/server.ts`. After changing source files or running `git pull`, restart the container:
+
+```bash
+docker compose restart
+```
+
+Rebuild only when package dependencies or the Dockerfile change:
+
+```bash
+docker compose up -d --build
+```
+
+## PM2 Deployment
+
+For a non-Docker server:
 
 ```bash
 sudo npm install pm2 -g
-pm2 start --interpreter tsx src/server.ts --name "fb-monitor"
+pm2 start --interpreter tsx src/server.ts --name fb-monitor
 pm2 startup
 pm2 save
 ```
 
----
-
 ## Project Structure
 
-```
+```text
 .
 ├── src/
-│   ├── server.ts        # Express app bootstrap & startup
-│   ├── routes.ts        # Route-to-handler mappings
-│   ├── handlers.ts      # Route handler implementations
+│   ├── server.ts        # Express app bootstrap and startup
+│   ├── routes.ts        # Route mappings
+│   ├── handlers.ts      # Dashboard, monitor, login, and webhook handlers
 │   ├── telegram.ts      # Telegram API helpers
-│   ├── utils.ts         # State, log buffer, VNC stack utilities
-│   ├── monitor.js       # Playwright scraper & Telegram notifier
+│   ├── utils.ts         # App state, logs, login session helpers
+│   ├── monitor.js       # Playwright scraper and Telegram notifier
 │   └── public/
 │       ├── index.html   # Dashboard UI
 │       ├── app.js       # Dashboard frontend logic
 │       └── style.css    # Dashboard styles
 ├── docs/
-│   └── screenshot.png   # Dashboard screenshot
-├── data/                # Runtime data (auto-created, not committed)
-│   ├── config.json      # Settings (keywords, location, budget, Telegram)
-│   └── history.json     # Seen listing IDs
-├── fb_profile/          # Facebook session (not committed)
-├── config.example.json  # Template for first-run config bootstrap
-├── tsconfig.json        # TypeScript configuration
+│   └── screenshot.png
+├── config.example.json
 ├── Dockerfile
 ├── docker-compose.yml
-└── package.json
+├── package.json
+└── tsconfig.json
 ```
 
----
+## Useful Commands
 
-## Dashboard Overview
+```bash
+npm start          # Start dashboard
+npm run dev        # Start dashboard with auto-reload
+npm run build      # Type-check and compile TypeScript
+docker compose logs -f
+docker compose restart
+```
 
-| Section            | Description                                                              |
-| ------------------ | ------------------------------------------------------------------------ |
-| **Facebook Login** | Open a login browser, save session, view session status                  |
-| **Configuration**  | Keywords, city/region, scan interval, max price, headless mode, Telegram |
-| **Control Panel**  | Start / Stop monitor, Dry run (scrape without notifying)                 |
-| **Live Logs**      | Real-time terminal output from the scraper process                       |
+## Troubleshooting
 
----
+If Telegram test fails:
+
+- Confirm the bot token is copied exactly.
+- Send a message to the bot before fetching the chat ID.
+- Confirm the saved chat ID matches your Telegram account or group.
+
+If Facebook login does not save:
+
+- Wait until the Facebook home page is fully loaded before saving.
+- Clear profile lock files from the dashboard if a previous browser crashed.
+- Restart the dashboard and try the login flow again.
+
+If no listings appear:
+
+- Run a dry run from the dashboard.
+- Check that the Marketplace location and keyword return results in a normal browser.
+- Review `monitor.log` from the dashboard or the local file.
 
 ## Disclaimer
 
-Using automation tools on Facebook may violate their Terms of Service. Use a reasonable scan interval (15+ minutes) to reduce the risk of account restrictions. This tool is intended for personal use only.
+Automation against Facebook may violate Facebook's Terms of Service. Use this project only for personal monitoring, keep scan intervals reasonable, and understand the risk of account restrictions.
